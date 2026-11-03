@@ -1,4 +1,5 @@
 import os,re,time,streamlit as st,pandas as pd
+import oauth
 from engine import init,ml_id,fetch_ml,save,add_alert,products,get,history,stats,alerts,events,deactivate
 st.set_page_config(page_title='SmartWait | Price Intelligence',page_icon='🛍️',layout='centered')
 init()
@@ -7,6 +8,9 @@ if 'messages' not in st.session_state:st.session_state.messages=[{'role':'assist
 if 'current' not in st.session_state:st.session_state.current=None
 if 'last_check' not in st.session_state:st.session_state.last_check=0
 if 'token' not in st.session_state:st.session_state.token=''
+settings=oauth.config()
+if settings:oauth.callback(settings)
+st.session_state.token=oauth.access_token(settings) if settings else ''
 
 def money(value,currency='ARS'):
  return f'{currency} {value:,.2f}'.replace(',','X').replace('.',',').replace('X','.')
@@ -59,10 +63,17 @@ st.title('🛍️ SmartWait')
 st.caption('Precios verificables · Historial propio · Alertas inmediatas · Sin precios inventados')
 with st.sidebar:
  st.header('Configuración')
- token=os.getenv('MELI_ACCESS_TOKEN','')
- # En Colab, pegar token solo en esta sesión. Nunca se escribe a SQLite.
- st.session_state.token=st.text_input('Token OAuth de Mercado Libre',value=st.session_state.token or token,type='password',help='La API puede requerir permisos sobre la publicación. No se guarda en la base de datos.')
- if not st.session_state.token:st.warning('Sin token no se pueden verificar precios en vivo.')
+ if not settings:
+  st.error('Faltan MELI_CLIENT_ID, MELI_CLIENT_SECRET o MELI_REDIRECT_URI en Secrets.')
+ elif st.session_state.token:
+  st.success('Mercado Libre conectado')
+  if st.button('Desconectar'):
+   for key in ('meli_access_token','meli_refresh_token','meli_expires_at'):st.session_state.pop(key,None)
+   st.session_state.token=''
+   st.rerun()
+ else:
+  st.link_button('Conectar con Mercado Libre',oauth.authorization_url(settings))
+  st.info('Autorizá tu cuenta para consultar publicaciones. La conexión dura mientras esta sesión siga activa.')
  st.divider()
  st.subheader('Seguimiento')
  known=products()
