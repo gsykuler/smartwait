@@ -27,11 +27,13 @@ def fetch_ml(item_id,token):
  headers={'Authorization':'Bearer '+token,'Accept':'application/json','User-Agent':'SmartWait-educational/3.0'}
  try:
   r=requests.get(f'{API}/items/{item_id}',headers=headers,timeout=12)
-  if r.status_code in (401,403):raise ValueError('Mercado Libre rechazó el acceso. Revisá el token o los permisos de tu aplicación.')
+  if r.status_code==401:raise ValueError('La API de publicaciones (/items) devolvió HTTP 401: credencial no autorizada para este recurso.')
+  if r.status_code==403:raise ValueError('La API de publicaciones (/items) devolvió HTTP 403: acceso denegado para esta publicación o aplicación.')
   if r.status_code==404:raise ValueError('No encontré esa publicación en Mercado Libre.')
   r.raise_for_status(); item=r.json()
   r=requests.get(f'{API}/items/{item_id}/sale_price',headers=headers,params={'context':'channel_marketplace'},timeout=12)
-  if r.status_code in (401,403):raise ValueError('No tenés permisos para consultar el precio de esa publicación. No voy a usar un valor aproximado.')
+  if r.status_code==401:raise ValueError('La API de precios (/sale_price) devolvió HTTP 401: autorización insuficiente o inválida para este recurso.')
+  if r.status_code==403:raise ValueError('La API de precios (/sale_price) devolvió HTTP 403: esta aplicación no tiene acceso a ese precio.')
   if r.status_code==404:raise ValueError('Mercado Libre no devolvió el precio de venta de esa publicación.')
   r.raise_for_status();price=r.json()
  except requests.RequestException as exc:raise ValueError(f'No pude verificar el precio con Mercado Libre ({type(exc).__name__}). No se guardaron datos.') from exc
