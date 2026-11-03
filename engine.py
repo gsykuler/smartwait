@@ -1,6 +1,6 @@
 import os,re,sqlite3,requests,datetime as dt,statistics
 from urllib.parse import urlparse
-DB=os.getenv('SMARTWAIT_DB','/content/smartwait_live/smartwait.db')
+DB = "/tmp/smartwait.db"
 API='https://api.mercadolibre.com'
 
 def connect():
